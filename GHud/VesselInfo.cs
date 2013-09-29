@@ -44,7 +44,7 @@ namespace GHud
 
             
             if(dev.use_backdrops)
-                background = Image.FromFile("d:\\dev\\stars.gif");
+                background = Image.FromFile("stars.gif");
 
             colmatrix = new System.Drawing.Imaging.ColorMatrix();
             colmatrix.Matrix33 = 0.7F;

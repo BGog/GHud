@@ -251,7 +251,7 @@ namespace GHud
             inverted_clear_brush = Brushes.White;
             inverted_txt_brush = Brushes.Black;
             default_pen = Pens.White;
-            use_backdrops = true;
+            use_backdrops = false;
 
             device_type = DMcLgLCD.LGLCD_DEVICE_QVGA;
             InitLCD();
