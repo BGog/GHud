@@ -143,12 +143,15 @@ namespace GHud
                 initialbw.Activate();
                 bw_dev.modules.Add(initialbw);
 
-                /*
-                OrbitInfo targetinfo = new OrbitInfo(bw_dev, "⊹", System.Drawing.Color.Black, System.Drawing.Color.Black);
+                
+                OrbitInfo targetinfo = new OrbitInfo(bw_dev, "+", System.Drawing.Color.Black, System.Drawing.Color.Black);
                 targetinfo.is_target_type_module = true;
                 bw_dev.modules.Add(targetinfo);
-                */
-                bw_dev.modules.Add(new OrbitGraph(bw_dev));
+
+                bw_dev.modules.Add(new OrbitGraph(bw_dev, System.Drawing.Color.Yellow, "✈"));
+                OrbitGraph tgt_orbitgraph = new OrbitGraph(bw_dev, System.Drawing.Color.Yellow, "+");
+                tgt_orbitgraph.is_target_type_module = true;
+                bw_dev.modules.Add(tgt_orbitgraph);
             }
 
             if (color_dev != null && color_dev.isValid())
@@ -157,19 +160,20 @@ namespace GHud
                 VesselInfo initialcolor = new VesselInfo(color_dev);
                 initialcolor.Activate();
                 color_dev.modules.Add(initialcolor);
-                color_dev.modules.Add(new OrbitInfo(color_dev, "✈", System.Drawing.Color.FromArgb(0xee, 0xee, 0x00), System.Drawing.Color.FromArgb(0xaa, 0xaa, 0x44)));
+                //color_dev.modules.Add(new OrbitInfo(color_dev, "✈", System.Drawing.Color.FromArgb(0xee, 0xee, 0x00), System.Drawing.Color.FromArgb(0xaa, 0xaa, 0x44)));
                 /*
                 OrbitInfo col_targetinfo = new OrbitInfo(color_dev, "⊹", System.Drawing.Color.LightBlue, System.Drawing.Color.MediumPurple);
                 col_targetinfo.is_target_type_module = true;
                 color_dev.modules.Add(col_targetinfo);
                  */
-                color_dev.modules.Add(new OrbitGraph(color_dev));
+                color_dev.modules.Add(new OrbitGraph(color_dev, System.Drawing.Color.Yellow, "✈"));
+                OrbitGraph tgt_orbitgraph = new OrbitGraph(color_dev, System.Drawing.Color.LightBlue, "+");
+                tgt_orbitgraph.is_target_type_module = true;
+                color_dev.modules.Add(tgt_orbitgraph);
             }
-            UnityEngine.Debug.LogWarning("[XXXXXXX] Awake 3");
-
+            
             foreach (Device dev in devices)
             {
-                UnityEngine.Debug.LogWarning("[XXXXXXX] Awake 4");
                 dev.ButtonUP += new Device.ButtonHandler(ButtonUp);
                 dev.ButtonDOWN += new Device.ButtonHandler(ButtonDown);
                 dev.ButtonLEFT += new Device.ButtonHandler(ButtonLeft);
@@ -207,21 +211,25 @@ namespace GHud
                 foreach (DisplayModule dmod in dev.modules)
                 {
 #if !TEST
+                    // FIXME This needs a rewrite.  All this crap should be done in the display classes.
                     ITargetable target;
                     target = FlightGlobals.fetch.VesselTarget;
                     Orbit orbit = null;
+                    String name = "Unknown";
                     if (dmod.is_target_type_module){
                         if(target == null){
                             dmod.ModuleMsg("No Target", new Rectangle(0,0,0,0));
                         }else{
                             orbit = target.GetOrbit();
+                            name = target.GetName();
                         }
                     }else{
                         orbit = vessel.orbit;
+                        name = vessel.GetName();
                     }
                     if (orbit != null)
                     {
-                        dmod.SetOrbit(orbit);
+                        dmod.SetOrbit(orbit, name);
                         dmod.Render(new Rectangle(0, 0, 0, 0));
                     }
 #endif

@@ -107,19 +107,24 @@ namespace GHud
 
         public void RenderSysString(String msg, bool invert, Rectangle rect)
         {
+            if (rect.Width == 0 && rect.Height == 0)
+            {
+                rect.Width = width;
+                rect.Height = height;
+            }
+
             if(sys_font == null)
                 sys_font = new System.Drawing.Font(font_names[cur_font], font_pt, System.Drawing.FontStyle.Bold);
             SizeF str_bounds = graph.MeasureString(msg, sys_font, new Point(0, 0), System.Drawing.StringFormat.GenericDefault);
             Brush br = invert ? inverted_txt_brush : default_txt_brush;
 
-            int x = (int)((width / 2) - (str_bounds.Width / 2));
-            int y = (int)((height / 2) - (str_bounds.Height / 2));
+            int x = (int)((rect.Width / 2) - (str_bounds.Width / 2) + rect.X);
+            int y = (int)((rect.Height / 2) - (str_bounds.Height / 2) + rect.Y);
 
             if (invert)
             {
-                if (rect.Width == 0 || rect.Height == 0)
-                    rect = new Rectangle(x, y, (int)(str_bounds.Width + 4), (int)(str_bounds.Height + 4));
-                graph.FillRectangle(inverted_clear_brush, rect);
+                Rectangle invert_rect = new Rectangle(x, y, (int)(str_bounds.Width + 4), (int)(str_bounds.Height + 4));
+                graph.FillRectangle(inverted_clear_brush, invert_rect);
             }
 
             graph.DrawString(msg, sys_font, invert ? inverted_txt_brush : default_txt_brush, x, y);
@@ -166,7 +171,7 @@ namespace GHud
                 
                 graph.TextRenderingHint = render_hint;
 
-                ClearLCD("Initializing...");
+                ClearLCD("Waiting for Flight...");
                 DMcLgLCD.LcdSetAsLCDForegroundApp(device, DMcLgLCD.LGLCD_FORE_YES);
                 valid = true;
            }

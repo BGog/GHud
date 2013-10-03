@@ -28,13 +28,19 @@ namespace GHud
         protected double a;
         protected double r;
         protected Dictionary<string, System.Drawing.Color> body_colors;
+        protected String orphan_string;
 
-        public OrbitGraph(Device dev, String argmon = "") : base(dev)
+        public OrbitGraph(Device dev, System.Drawing.Color orbpen_color, String orphanstr) : base(dev)
         {
             name = "Orbit Graph";
             selectable = false;
             active = false;
-        
+
+            orphan_string = orphanstr;
+
+            if (orbpen_color == null)
+                orbpen_color = System.Drawing.Color.Yellow;
+
             width = dev.width;
             height = dev.height;
 
@@ -64,7 +70,7 @@ namespace GHud
             
             body_colors.TryGetValue("Pol", out body_color);
             
-            orbitpen = new Pen(System.Drawing.Color.Yellow, 1.0f);
+            orbitpen = new Pen(orbpen_color, 1.0f);
             orbitpen.Alignment = System.Drawing.Drawing2D.PenAlignment.Outset;
         }
 
@@ -161,12 +167,41 @@ namespace GHud
                 xoff = 0;
                 yoff = 0;
             }
-                        
+
+
+            {
+                String orb_ap_suffix = "";
+                String orb_pe_suffix = "";
+                float tmpfont_pt = font_pt;
+                int line = 0;
+                if (dev.is_color)
+                {
+                    line++;
+                    tmpfont_pt -= 2.0f;
+                    RenderString(orphan_string, line + 1, 0, ref two_column_offsets, fmt_left, System.Drawing.FontStyle.Bold, false, font_pt + 1.0f);
+                }
+                else
+                {
+                    RenderString(orphan_string, line + 1, 0, ref two_column_offsets, fmt_left, System.Drawing.FontStyle.Bold, false, font_pt + 2.0f);
+                }
+                if (companion_mod == null || !companion_mod.active)
+                {
+                    RenderString("a:" + Util.xMuMech_ToSI(ApA, ref orb_ap_suffix) + orb_ap_suffix, line, 0, ref two_column_offsets, fmt_left, System.Drawing.FontStyle.Regular, false, tmpfont_pt);
+                    RenderString("p:" + Util.xMuMech_ToSI(PeA, ref orb_pe_suffix) + orb_pe_suffix, line, 1, ref two_column_offsets, fmt_right, System.Drawing.FontStyle.Regular, false, tmpfont_pt);
+                }
+            }
+
+            // We are leaving the sphere of influence,  no orbit can be drawn.
+            if (ApR < 0 && ApR < PeR)
+            {
+                ModuleMsg("Leaving Sphere of Influence", rect);
+                return;
+            }
 
             int border = 3;
             // The bounding box for the drawing
             Rectangle dr = new Rectangle(xoff + border, yoff + border, (int)(width - (border * 2)), (int)(height - (border * 2)));
-            
+
             // Calculate scaling factor used to scale from KSP orbital sizes down to device pixels
             double width_mod = dr.Width / (semi_major_axis * 2);
             double height_mod = dr.Height / (semi_minor_axis * 2);
@@ -187,7 +222,7 @@ namespace GHud
             if (elliptical_rect.Height < 0)
                 elliptical_rect.Height = 1;
             dev.graph.DrawEllipse(orbitpen, elliptical_rect);
-            
+
             // Scale and draw the body
             double body_dia = dia * mod;
             // Determine the scaled location where the body should be centered
@@ -199,7 +234,7 @@ namespace GHud
             // Draw the body
             Rectangle body_rect = new Rectangle((int)body_x, (int)centery, (int)body_dia, (int)body_dia);
             if (dev.is_color)
-            { 
+            {
                 System.Drawing.Brush body_brush = new System.Drawing.SolidBrush(body_color);
                 dev.graph.FillEllipse(body_brush, body_rect);
                 body_brush.Dispose();
@@ -208,59 +243,58 @@ namespace GHud
             {
                 dev.graph.FillEllipse(dev.inverted_clear_brush, body_rect);
             }
-            
+
             // Calculate the drawing location of the vessel on the ellipse.
-            double aradian = (a + 90) * (Math.PI/180);
+            double aradian = (a + 90) * (Math.PI / 180);
             double x = (r * Math.Sin(aradian)) * mod;
             double y = (r * Math.Cos(aradian)) * mod;
             int xx = (int)(x + body_x + (body_dia / 2));
-            int yy = (int)(y + centery  + (body_dia / 2));
+            int yy = (int)(y + centery + (body_dia / 2));
 
             int vi_rad = (int)(dev.font_pt / 3);
             Rectangle vessel_rect = new Rectangle(xx - vi_rad, yy - vi_rad, vi_rad * 2, vi_rad * 2);
             dev.graph.FillEllipse(dev.inverted_clear_brush, vessel_rect);
-            
+
 
             // Calculate and draw the atmosphere.  This is drawn over the body with and alpha level.
             // By drawing this last, we get the effect of seeing the orbit and vessel behind the atmostphere.
-            double atmosdia = atmos_dia * mod;
-            double atmos_centerx = (elx + (el_width / 2)) - (atmosdia / 2);
-            double atmos_centery = (ely + (el_height / 2)) - (atmosdia / 2);
-            double atmos_x = atmos_centerx + body_xoff;
-            Rectangle atmos_rect = new Rectangle((int)atmos_x, (int)atmos_centery, (int)atmosdia, (int)atmosdia);
-            UnityEngine.Debug.LogWarning("[XXXXXXX] Rend 8");    
-
             if (dev.is_color)
             {
+                double atmosdia = atmos_dia * mod;
+                double atmos_centerx = (elx + (el_width / 2)) - (atmosdia / 2);
+                double atmos_centery = (ely + (el_height / 2)) - (atmosdia / 2);
+                double atmos_x = atmos_centerx + body_xoff;
+                Rectangle atmos_rect = new Rectangle((int)atmos_x, (int)atmos_centery, (int)atmosdia, (int)atmosdia);
+
                 double reduction = (atmosdia - body_dia) / 2;
                 double pos_reduction = reduction / 2;
                 Rectangle atmos_inner_rect = new Rectangle((int)(atmos_x + pos_reduction), (int)(atmos_centery + pos_reduction), (int)(atmosdia - (reduction)), (int)(atmosdia - (reduction)));
                 System.Drawing.Brush atmos_brush = new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(100, (int)body_color.R, (int)body_color.G, (int)body_color.B));
-                
+
                 dev.graph.FillEllipse(atmos_brush, atmos_inner_rect);
                 dev.graph.FillEllipse(atmos_brush, atmos_rect);
                 atmos_brush.Dispose();
             }
-            else
-            {
-                Pen pen = (Pen)dev.default_pen.Clone();
-                pen.DashPattern = new float[] { 1.0F, 4.0F };
-                dev.graph.DrawEllipse(pen, atmos_rect);
-                pen.Dispose();
-            }
+
+
             
-            // We are leaving the sphere of influence,  no orbit can be drawn.
-            if (ApR < 0 && ApR < PeR)
-            {
-                ModuleMsg("Leaving Sphere of Influence", rect);
-                return;
-            }
         }
 
         public override void TestRender(Rectangle rect)
         {
             if (!active)
                 return;
+            /*
+            if (orbit == null)
+            {
+                if (is_target_type_module)
+                    ModuleMsg("No Target", rect);
+                else
+                    ModuleMsg("Null Orbit", rect);
+
+                return;
+            }
+             */
 
             PrepTestData(rect);
             DoRender(rect);
@@ -271,6 +305,16 @@ namespace GHud
         {
             if (!active)
                 return;
+
+            if (orbit == null)
+            {
+                if (is_target_type_module)
+                    ModuleMsg("No Target", rect);
+                else
+                    ModuleMsg("Null Orbit", rect);
+              
+                return;
+            }
 
             PrepData(orbit, rect);
             DoRender(rect);

@@ -85,7 +85,7 @@ namespace GHud
                     situationstr = "Landed";
                     break;
                 case Vessel.Situations.ORBITING:
-                    situationstr = "Orbiting";
+                    situationstr = "";
                     break;
                 case Vessel.Situations.PRELAUNCH:
                     situationstr = "Prelaunch";
@@ -97,7 +97,7 @@ namespace GHud
                     situationstr = "Sub Orbital";
                     break;
                 default:
-                    situationstr = "Unknown";
+                    situationstr = "";
                 break;  
             }
             
@@ -116,7 +116,7 @@ namespace GHud
             orb_pet_str = Util.ConvertInterval(orbit.timeToPe, false);
 
             orb_body_name = orbit.referenceBody.GetName();
-            orb_obj_name = vessel.name;
+            //orb_obj_name = vessel.name;
         }
 
         protected void DoRender(Rectangle rect)
@@ -164,12 +164,27 @@ namespace GHud
             curline = 3;
             RenderString(orb_apt_str, curline, 0, ref two_column_offsets, fmt_right);
             RenderString(orb_pet_str, curline, 1, ref two_column_offsets, fmt_right);
+
+            curline = 4;
+            if(dev.is_color)
+                RenderString(situationstr, curline, 0, ref two_column_offsets, fmt_left, System.Drawing.FontStyle.Regular, false, tmp_font_pt - 2.0f, 0.0f, 10.0f);
+
         }
 
         public override void TestRender(Rectangle rect)
         {
             if (!active)
                 return;
+            /*
+            if (orbit == null)
+            {
+                if (is_target_type_module)
+                    ModuleMsg("No Target", rect);
+                else
+                    ModuleMsg("Null Orbit", rect);
+                return;
+            }
+            */
             PrepTestData();
 
             DoRender(rect);
@@ -181,6 +196,16 @@ namespace GHud
         {
             if (!active)
                 return;
+
+            if (orbit == null)
+            {
+                if (is_target_type_module)
+                    ModuleMsg("No Target", rect);
+                else
+                    ModuleMsg("Null Orbit", rect);
+                return;
+            }
+
             PrepData();
             DoRender(rect);
         }

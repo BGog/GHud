@@ -43,6 +43,10 @@ namespace GHud
         protected Orbit orbit;
         protected String orb_obj_name;
 
+        
+        public int modid;
+        public DisplayModule companion_mod;
+
         private bool disposed = false;
 
         public void Dispose()
@@ -86,7 +90,11 @@ namespace GHud
             active = false;
             curfont = null;
 
+            modid = 0;
+
             font_pt = dev.font_pt;
+
+            companion_mod = null;
 
             fmt_left.Alignment = StringAlignment.Near;
             fmt_left.LineAlignment = StringAlignment.Center;
@@ -96,7 +104,7 @@ namespace GHud
             fmt_right.LineAlignment = StringAlignment.Center;
         }
 
-        public void SetOrbit(Orbit argorbit, String obj_name = "Unknown")
+        public virtual void SetOrbit(Orbit argorbit, String obj_name = "Unknown")
         {
             orbit = argorbit;
             orb_obj_name = obj_name;
