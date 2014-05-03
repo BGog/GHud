@@ -76,7 +76,7 @@
     </PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PreBuildEvent>copy $(ProjectDir)\assemblies\DMcLgLCD.dll  $(ProjectDir)\..\testGhud\$(OutDir)</PreBuildEvent>
+    <PreBuildEvent>copy "$(ProjectDir)\assemblies\DMcLgLCD.dll"  "$(ProjectDir)\..\testGhud\$(OutDir)"</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
