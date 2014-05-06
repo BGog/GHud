@@ -10,6 +10,8 @@ namespace GHud
     public class Device: IDisposable
     {
         public bool valid;
+
+		Settings pastDevices = new Settings("GHudData.cfg");
         
         // Device physical parameters
         public int width;
@@ -102,6 +104,9 @@ namespace GHud
                 DMcLgLCD.LcdDisconnect(connection);
                 connection = DMcLgLCD.LGLCD_INVALID_CONNECTION;
             }
+			pastDevices.device = DMcLgLCD.LGLCD_INVALID_DEVICE;
+			pastDevices.connection = DMcLgLCD.LGLCD_INVALID_DEVICE;
+			pastDevices.Save();
             GC.SuppressFinalize(this);
         }
 
@@ -158,12 +163,26 @@ namespace GHud
 
         protected void InitLCD()
         {
+			// this little checking code may not work correctly as I can't find
+			// a way to test it that doesn't involve not disconnecting the device
+			pastDevices.Load();
+			if (pastDevices.device != DMcLgLCD.LGLCD_INVALID_DEVICE) {
+				DMcLgLCD.LcdClose(pastDevices.device);
+				DMcLgLCD.LcdDisconnect(pastDevices.connection);
+				pastDevices.device = DMcLgLCD.LGLCD_INVALID_DEVICE;
+				pastDevices.connection = DMcLgLCD.LGLCD_INVALID_DEVICE;
+				pastDevices.Save();
+			}
             connection = DMcLgLCD.LcdConnectEx("GHud", 0, 0);
             if (DMcLgLCD.LGLCD_INVALID_CONNECTION != connection)
             {
                 device = DMcLgLCD.LcdOpenByType(connection, device_type);
                 if(DMcLgLCD.LGLCD_INVALID_DEVICE == device)
                     return;
+
+				pastDevices.device = this.device;
+				pastDevices.connection = this.connection;
+				pastDevices.Save();
 
                 LCD = new Bitmap(width, height);
                 
@@ -262,5 +281,12 @@ namespace GHud
             InitLCD();
         }
     }
-}
 
+	public class Settings : ConfigNodeStorage
+	{
+		internal Settings(String FilePath) : base(FilePath) { }
+
+		[Persistent] internal int device;
+		[Persistent] internal int connection;
+	}
+}
