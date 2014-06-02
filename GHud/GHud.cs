@@ -31,12 +31,14 @@ public class MonoBehaviour
 
 namespace GHud
 {
-    [KSPAddon(KSPAddon.Startup.EveryScene, false)]
+    [KSPAddon(KSPAddon.Startup.Instantly, true)]
     public class GHud : MonoBehaviour
     {
         List<Device> devices = new List<Device>();  
         
         //private static string appPath = KSPUtil.ApplicationRootPath.Replace("\\", "/") + "GameData/";
+
+		public static GHud GHudmain;
 
         public bool test_mode = false;
         
@@ -127,6 +129,10 @@ namespace GHud
 
         public void Awake()
         {
+			if (GHudmain != null) return;
+			GHudmain = this;
+			UnityEngine.Object.DontDestroyOnLoad(GHudmain);
+
             if (!lcd_initialized)
             {
                 DMcLgLCD.LcdInit();
@@ -191,17 +197,23 @@ namespace GHud
             float update_delta = 1.0f;
             
 #if !TEST
-            if (!HighLogic.LoadedSceneIsFlight)
-                return;
+            //if (!HighLogic.LoadedSceneIsFlight)
+                //return;
            
             update_delta = Time.time - last_update;
              
-            if (update_delta < 0.2f)
+            if (update_delta < 0.07f)
             {
                 return;
             }
             Vessel vessel = FlightGlobals.ActiveVessel;
-            if (vessel.rigidbody == null) return;
+			if (vessel == null) {
+				foreach (Device dev in devices) {
+					dev.ClearLCD("Waiting for Flight...");
+					dev.DisplayFrame();
+				}
+				return;
+			}
 #endif
             foreach (Device dev in devices)
             {
@@ -227,11 +239,11 @@ namespace GHud
                         orbit = vessel.orbit;
                         name = vessel.GetName();
                     }
-                    if (orbit != null)
-                    {
-                        dmod.SetOrbit(orbit, name);
-                        dmod.Render(new Rectangle(0, 0, 0, 0));
-                    }
+					if (orbit != null)
+					{
+						dmod.SetOrbit(orbit, name);
+						dmod.Render(new Rectangle(0, 0, 0, 0));
+					}
 #endif
                     if (test_mode)
                     {

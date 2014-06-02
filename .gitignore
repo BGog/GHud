@@ -2,6 +2,10 @@
 [Bb]in/
 [Oo]bj/
 
+# KSP Dll's
+Assembly-CSharp.dll
+UnityEngine.dll
+
 # mstest test results
 TestResults
 
