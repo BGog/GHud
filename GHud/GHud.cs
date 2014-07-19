@@ -202,10 +202,11 @@ namespace GHud
            
             update_delta = Time.time - last_update;
              
-            if (update_delta < 0.07f)
+            if (update_delta < 0.2f)
             {
                 return;
             }
+            last_update = Time.time;
             Vessel vessel = FlightGlobals.ActiveVessel;
 			if (vessel == null) {
 				foreach (Device dev in devices) {
