@@ -1,6 +1,7 @@
 ﻿//#define TEST
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.ComponentModel;
@@ -41,11 +42,12 @@ namespace GHud
 		public static GHud GHudmain;
 
         public bool test_mode = false;
-        
-        private float last_update = 0.0f;
+
         private int config = 0;
 
         private bool lcd_initialized = false;
+
+        private bool lcd_idle = false;
 
         private String[] font_names = new String[]  {"Inconsolata Medium", "Arial", "Arial Narrow", "Consolas", "Terminal", "Segoe UI Light", "Segoe UI"};
 
@@ -131,7 +133,9 @@ namespace GHud
         {
 			if (GHudmain != null) return;
 			GHudmain = this;
+#if !TEST
 			UnityEngine.Object.DontDestroyOnLoad(GHudmain);
+#endif
 
             if (!lcd_initialized)
             {
@@ -192,29 +196,48 @@ namespace GHud
             }
         }
 
-        public void Update()
+        // this pattern of using a coroutine to periodically execute things that don't actually need to
+        // source: the bottom of this page http://docs.unity3d.com/Manual/Coroutines.html
+        public void Start()
         {
-            float update_delta = 1.0f;
-            
-#if !TEST
-            //if (!HighLogic.LoadedSceneIsFlight)
-                //return;
-           
-            update_delta = Time.time - last_update;
-             
-            if (update_delta < 0.2f)
+            StartCoroutine(LcdUpdateLoop());
+        }
+
+        IEnumerator LcdUpdateLoop()
+        {
+            float wait_time = 1.0f;
+            for (; ; )
             {
-                return;
+                wait_time = LcdUpdate();
+                yield return new WaitForSeconds(wait_time);
             }
-            last_update = Time.time;
+        }
+
+        // now returns a float (interpreted as seconds) defining how loang to wait before the next call, see function above
+        public float LcdUpdate()
+        {
+            // this is how long we wait between LCD updates depending on if we're idle or active
+            const float wait_idle = 2.0f;
+            const float wait_active = 0.2f;
+
+#if !TEST
+            // this is needed to avoid exceptions due to FlightGlobals not existing (I think), which otherwise terminates the update loop
+            // IsGame seems to be true only when a game is loaded/active (i.e. not in the main menu)
+            if (!HighLogic.LoadedSceneIsGame)
+                return wait_idle*2;
+
             Vessel vessel = FlightGlobals.ActiveVessel;
 			if (vessel == null) {
+                if (lcd_idle) return wait_idle;
 				foreach (Device dev in devices) {
 					dev.ClearLCD("Waiting for Flight...");
 					dev.DisplayFrame();
 				}
-				return;
-			}
+                lcd_idle = true;
+                return wait_idle;
+            }
+
+            lcd_idle = false;
 #endif
             foreach (Device dev in devices)
             {
@@ -245,19 +268,16 @@ namespace GHud
 						dmod.SetOrbit(orbit, name);
 						dmod.Render(new Rectangle(0, 0, 0, 0));
 					}
-#endif
+#else
                     if (test_mode)
                     {
                         dmod.TestRender(new Rectangle(0, 0, 0, 0));
                     }
+#endif
                 }
                 dev.DisplayFrame();
             }
-            
-                    
-#if !TEST
-            last_update = Time.time;
-#endif   
+            return wait_active;
         }
 
     }
